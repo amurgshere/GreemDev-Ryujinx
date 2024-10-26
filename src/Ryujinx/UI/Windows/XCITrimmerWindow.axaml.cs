@@ -2,9 +2,10 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
 using FluentAvalonia.UI.Controls;
+using Ryujinx.Ava.Common;
 using Ryujinx.Ava.Common.Locale;
 using Ryujinx.Ava.UI.ViewModels;
-using Ryujinx.UI.App.Common;
+using Ryujinx.UI.Common.Models;
 using System.Threading.Tasks;
 
 namespace Ryujinx.Ava.UI.Windows
@@ -20,21 +21,21 @@ namespace Ryujinx.Ava.UI.Windows
             InitializeComponent();
         }
 
-        public XCITrimmerWindow(ApplicationLibrary applicationLibrary)
+        public XCITrimmerWindow(MainWindowViewModel mainWindowViewModel)
         {
-            DataContext = ViewModel = new XCITrimmerViewModel(applicationLibrary);
+            DataContext = ViewModel = new XCITrimmerViewModel(mainWindowViewModel.ApplicationLibrary, new XCIFileTrimmerLog(mainWindowViewModel));
 
             InitializeComponent();
         }
 
-        public static async Task Show(ApplicationLibrary applicationLibrary)
+        public static async Task Show(MainWindowViewModel mainWindowViewModel)
         {
             ContentDialog contentDialog = new()
             {
                 PrimaryButtonText = "",
                 SecondaryButtonText = "",
                 CloseButtonText = "",
-                Content = new XCITrimmerWindow(applicationLibrary),
+                Content = new XCITrimmerWindow(mainWindowViewModel),
                 Title = string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerWindowTitle])
             };
 
@@ -51,36 +52,23 @@ namespace Ryujinx.Ava.UI.Windows
             ((ContentDialog)Parent).Hide();
         }
 
-/*
-        private void RemoveDLC(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                if (button.DataContext is DownloadableContentModel model)
-                {
-                    ViewModel.Remove(model);
-                }
-            }
-        }
-
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             foreach (var content in e.AddedItems)
             {
-                if (content is XCITrimmerApplicationData applicationData)
+                if (content is XCITrimmerApplicationModel applicationData)
                 {
-                    //ViewModel.Select(applicationData);
+                    ViewModel.Select(applicationData);
                 }
             }
 
             foreach (var content in e.RemovedItems)
             {
-                if (content is XCITrimmerApplicationData applicationData)
+                if (content is XCITrimmerApplicationModel applicationData)
                 {
-                    //ViewModel.Deselect(applicationData);
+                    ViewModel.Deselect(applicationData);
                 }
             }
         }
-*/
     }
 }
