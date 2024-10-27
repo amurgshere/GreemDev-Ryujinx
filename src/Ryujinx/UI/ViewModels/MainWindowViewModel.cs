@@ -375,7 +375,7 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         public bool OpenDeviceSaveDirectoryEnabled => !SelectedApplication.ControlHolder.ByteSpan.IsZeros() && SelectedApplication.ControlHolder.Value.DeviceSaveDataSize > 0;
 
-        public bool TrimXCIEnabled => Ryujinx.Common.Utilities.XCIFileTrimmer.CanTrim(SelectedApplication.Path, new Common.XCIFileTrimmerLog(this));
+        public bool TrimXCIEnabled => Ryujinx.Common.Utilities.XCIFileTrimmer.CanTrim(SelectedApplication.Path, new Common.XCIFileTrimmerMainWindowLog(this));
 
         public bool OpenBcatSaveDirectoryEnabled => !SelectedApplication.ControlHolder.ByteSpan.IsZeros() && SelectedApplication.ControlHolder.Value.BcatDeliveryCacheStorageSize > 0;
 
@@ -1880,7 +1880,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                 return;
             }
 
-            var trimmer = new XCIFileTrimmer(filename, new Common.XCIFileTrimmerLog(this));
+            var trimmer = new XCIFileTrimmer(filename, new Common.XCIFileTrimmerMainWindowLog(this));
 
             if (trimmer.CanBeTrimmed)
             {
@@ -1930,7 +1930,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                         }
                     })
                     {
-                        Name = "GUI.XCFileTrimmerThread",
+                        Name = "GUI.XCIFileTrimmerThread",
                         IsBackground = true,
                     };
                     XCIFileTrimThread.Start();

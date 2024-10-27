@@ -231,6 +231,14 @@
         <Setter Property="MinWidth"
                 Value="80" />
     </Style>
+    <Style Selector="ProgressBar:horizontal">
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+    </Style>
+    <Style Selector="ProgressBar:vertical">
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+    </Style>
     <Style Selector="ProgressBar /template/ Border#ProgressBarTrack">
         <Setter Property="IsVisible"
                 Value="False" />

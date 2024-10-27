@@ -15,8 +15,8 @@
     x:DataType="viewModels:XCITrimmerViewModel"
     Focusable="True">
     <UserControl.Resources>
-        <helpers:XCITrimmableConverter x:Key="TrimmableLabel" />
-        <helpers:XCITrimmableSpaceSavingsConverter x:Key="SpaceSavingsLabel" />
+        <helpers:XCITrimmerFileStatusConverter x:Key="StatusLabel" />
+        <helpers:XCITrimmerFileSpaceSavingsConverter x:Key="SpaceSavingsLabel" />
     </UserControl.Resources>
     <Grid Margin="20 0 20 0">
         <Grid.RowDefinitions>
@@ -30,37 +30,44 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock
                     Grid.Column="0"
                     Text="{Binding UpdateCount}" />
-                <StackPanel
+                <TextBox
                     Grid.Column="1"
+                    MinHeight="29"
+                    MaxHeight="29"
+                    Margin="5 0 5 0"
+                    HorizontalAlignment="Stretch"
+                    Watermark="{locale:Locale Search}"
+                    IsVisible="{Binding !Processing}"
+                    IsEnabled="{Binding !Processing}"
+                    Text="{Binding Search}" />
+                <StackPanel
+                    Grid.Column="2"
                     Orientation="Horizontal">
                     <Button
                         Name="SelectAllButton"
                         MinWidth="90"
                         Margin="5"
-                        Command="{Binding SelectAll}">
+                        Command="{Binding SelectAll}"
+                        IsVisible="{Binding !Processing}"
+                        IsEnabled="{Binding !Processing}">
                         <TextBlock Text="Select All" />
                     </Button>
                     <Button
                         Name="SelectNoneButton"
                         MinWidth="90"
                         Margin="5"
-                        Command="{Binding SelectNone}">
+                        Command="{Binding SelectNone}"
+                        IsVisible="{Binding !Processing}"
+                        IsEnabled="{Binding !Processing}">
                         <TextBlock Text="Select None" />
                     </Button>
                 </StackPanel>
-                <TextBox
-                    Grid.Column="2"
-                    MinHeight="29"
-                    MaxHeight="29"
-                    HorizontalAlignment="Stretch"
-                    Watermark="{locale:Locale Search}"
-                    Text="{Binding Search}" />
             </Grid>
         </Panel>
         <Border
@@ -73,15 +80,17 @@
             CornerRadius="5"
             Padding="2.5">
             <ListBox
-                AutoScrollToSelectedItem="False"
+                AutoScrollToSelectedItem="{Binding Processing}"
+                SelectedItem="{Binding ProcessingApplication.Value}"
                 SelectionMode="Multiple, Toggle"
                 Background="Transparent"
                 SelectionChanged="OnSelectionChanged"
-                SelectedItems="{Binding SelectedXCITrimmerApplications, Mode=OneWay}"
-                ItemsSource="{Binding Views}">
+                SelectedItems="{Binding SelectedXCIFiles, Mode=OneWay}"
+                ItemsSource="{Binding DisplayedXCIFiles}"
+                IsEnabled="{Binding !Processing}">
                 <ListBox.DataTemplates>
                     <DataTemplate
-                        DataType="models:XCITrimmerApplicationModel">
+                        DataType="models:XCITrimmerFileModel">
                         <Panel Margin="10">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -103,31 +112,31 @@
                                         <ColumnDefinition Width="45*" />
                                         <ColumnDefinition Width="55*" />
                                     </Grid.ColumnDefinitions>
+                                    <ProgressBar
+                                        Height="10"
+                                        Margin="10 0 10 0"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Center"
+                                        CornerRadius="5"
+                                        IsVisible="{Binding $parent[UserControl].((viewModels:XCITrimmerViewModel)DataContext).Processing}"
+                                        Maximum="100"
+                                        Minimum="0"
+                                        Value="{Binding PercentageProgress}" />
                                     <TextBlock
                                         Grid.Column="0"
                                         Margin="10 0 10 0"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Center"
-                                        MaxLines="1">
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{StaticResource TrimmableLabel}">
-                                                <Binding Path="Trimmable" />
-                                                <Binding Path="Untrimmable" />
-                                            </MultiBinding>
-                                        </TextBlock.Text>
+                                        MaxLines="1"
+                                        Text="{Binding ., Converter={StaticResource StatusLabel}}">
                                     </TextBlock>
                                     <TextBlock
                                         Grid.Column="1"
                                         Margin="10 0 10 0"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Center"
-                                        MaxLines="1">
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{StaticResource SpaceSavingsLabel}">
-                                                <Binding Path="PotentialSavingsB" />
-                                                <Binding Path="CurrentSavingsB" />
-                                            </MultiBinding>
-                                        </TextBlock.Text>
+                                        MaxLines="1"
+                                        Text="{Binding ., Converter={StaticResource SpaceSavingsLabel}}">>
                                     </TextBlock>
                                 </Grid>
                             </Grid>
@@ -158,14 +167,16 @@
                         Name="TrimButton"
                         MinWidth="90"
                         Margin="5"
-                        Click="">
+                        Click="Trim"
+                        IsEnabled="{Binding !Processing}">
                         <TextBlock Text="Trim" />
                     </Button>
                     <Button
                         Name="UntrimButton"
                         MinWidth="90"
                         Margin="5"
-                        Click="">
+                        Click="Untrim"
+                        IsEnabled="{Binding !Processing}">
                         <TextBlock Text="Untrim" />
                     </Button>
                 </StackPanel>
@@ -175,11 +186,39 @@
                     Spacing="10"
                     HorizontalAlignment="Right">
                     <Button
+                        Name="CancellingButton"
+                        MinWidth="90"
+                        Margin="5"
+                        Click="Cancel"
+                        IsEnabled="False">
+                        <Button.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="Processing" />
+                                <Binding Path="Cancel" />
+                            </MultiBinding>
+                        </Button.IsVisible>
+                        <TextBlock Text="{locale:Locale InputDialogCancelling}" />
+                    </Button>
+                    <Button
                         Name="CancelButton"
                         MinWidth="90"
                         Margin="5"
-                        Click="Close">
+                        Click="Cancel">
+                        <Button.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="Processing" />
+                                <Binding Path="!Cancel" />
+                            </MultiBinding>
+                        </Button.IsVisible>
                         <TextBlock Text="{locale:Locale InputDialogCancel}" />
+                    </Button>
+                    <Button
+                        Name="CloseButton"
+                        MinWidth="90"
+                        Margin="5"
+                        Click="Close"
+                        IsVisible="{Binding !Processing}">
+                        <TextBlock Text="{locale:Locale InputDialogClose}" />
                     </Button>
                 </StackPanel>
             </Grid>

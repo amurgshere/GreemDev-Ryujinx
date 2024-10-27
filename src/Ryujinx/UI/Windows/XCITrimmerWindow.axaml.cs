@@ -2,11 +2,15 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
 using FluentAvalonia.UI.Controls;
-using Ryujinx.Ava.Common;
 using Ryujinx.Ava.Common.Locale;
 using Ryujinx.Ava.UI.ViewModels;
 using Ryujinx.UI.Common.Models;
+using System;
 using System.Threading.Tasks;
+
+// TODO
+//  Summary at bottom - Potential Space Saved / Actual Space Saved
+//  Processing label - e.g. Trimming / Untrimming xxx file(s)
 
 namespace Ryujinx.Ava.UI.Windows
 {
@@ -23,7 +27,7 @@ namespace Ryujinx.Ava.UI.Windows
 
         public XCITrimmerWindow(MainWindowViewModel mainWindowViewModel)
         {
-            DataContext = ViewModel = new XCITrimmerViewModel(mainWindowViewModel.ApplicationLibrary, new XCIFileTrimmerLog(mainWindowViewModel));
+            DataContext = ViewModel = new XCITrimmerViewModel(mainWindowViewModel);
 
             InitializeComponent();
         }
@@ -47,16 +51,31 @@ namespace Ryujinx.Ava.UI.Windows
             await contentDialog.ShowAsync();
         }
 
+        private void Trim(object sender, RoutedEventArgs e)
+        {
+            ViewModel.TrimSelected();
+        }
+
+        private void Untrim(object sender, RoutedEventArgs e)
+        {
+            ViewModel.UntrimSelected();
+        }
+
         private void Close(object sender, RoutedEventArgs e)
         {
             ((ContentDialog)Parent).Hide();
+        }
+
+        private void Cancel(Object sender, RoutedEventArgs e)
+        {
+            ViewModel.Cancel = true;
         }
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             foreach (var content in e.AddedItems)
             {
-                if (content is XCITrimmerApplicationModel applicationData)
+                if (content is XCITrimmerFileModel applicationData)
                 {
                     ViewModel.Select(applicationData);
                 }
@@ -64,7 +83,7 @@ namespace Ryujinx.Ava.UI.Windows
 
             foreach (var content in e.RemovedItems)
             {
-                if (content is XCITrimmerApplicationModel applicationData)
+                if (content is XCITrimmerFileModel applicationData)
                 {
                     ViewModel.Deselect(applicationData);
                 }
