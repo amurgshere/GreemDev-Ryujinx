@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 // TODO
 //  Summary at bottom - Potential Space Saved / Actual Space Saved
 //  Processing label - e.g. Trimming / Untrimming xxx file(s)
+//  Error Reporting
 
 namespace Ryujinx.Ava.UI.Windows
 {

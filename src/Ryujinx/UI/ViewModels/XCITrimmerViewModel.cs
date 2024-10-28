@@ -156,7 +156,9 @@ namespace Ryujinx.Ava.UI.ViewModels
                     foreach (var xciApp in toProcess)
                     {
                         if (cancellationToken.IsCancellationRequested)
+                        {
                             break;
+                        }
 
                         var trimmer = new XCIFileTrimmer(xciApp.Path, _logger);
 
@@ -168,8 +170,11 @@ namespace Ryujinx.Ava.UI.ViewModels
                         try
                         {
                             var outcome = OperationOutcome.Undetermined;
+                            
                             if (cancellationToken.IsCancellationRequested)
+                            {
                                 break;
+                            }
 
                             if (trim)
                             {
