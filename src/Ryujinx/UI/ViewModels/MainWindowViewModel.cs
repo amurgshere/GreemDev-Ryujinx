@@ -1853,36 +1853,7 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         public async void ProcessTrimResult(String filename, Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome operationOutcome)
         {
-            string notifyUser = null;
-
-            switch (operationOutcome)
-            {
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.NoTrimNecessary:
-                    notifyUser = LocaleManager.Instance[LocaleKeys.TrimXCIFileNoTrimNecessary];
-                    break;
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.ReadOnlyFileCannotFix:
-                    notifyUser = LocaleManager.Instance[LocaleKeys.TrimXCIFileReadOnlyFileCannotFix];
-                    break;
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.FreeSpaceCheckFailed:
-                    notifyUser = LocaleManager.Instance[LocaleKeys.TrimXCIFileFreeSpaceCheckFailed];
-                    break;
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.InvalidXCIFile:
-                    notifyUser = LocaleManager.Instance[LocaleKeys.TrimXCIFileInvalidXCIFile];
-                    break;
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.FileIOWriteError:
-                    notifyUser = LocaleManager.Instance[LocaleKeys.TrimXCIFileFileIOWriteError];
-                    break;
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.FileSizeChanged:
-                    notifyUser = LocaleManager.Instance[LocaleKeys.TrimXCIFileFileSizeChanged];
-                    break;
-                case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.Successful:
-                    if (Avalonia.Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                    {
-                        if (desktop.MainWindow is MainWindow mainWindow)
-                            mainWindow.LoadApplications();
-                    }
-                    break;
-            }
+            string notifyUser = operationOutcome.ToLocalisedText();
 
             if (notifyUser != null)
             {
@@ -1890,6 +1861,19 @@ namespace Ryujinx.Ava.UI.ViewModels
                     LocaleManager.Instance[LocaleKeys.TrimXCIFileFailedPrimaryText],
                     notifyUser
                 );
+            }
+            else
+            {
+                switch (operationOutcome)
+                {
+                    case Ryujinx.Common.Utilities.XCIFileTrimmer.OperationOutcome.Successful:
+                        if (Avalonia.Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                        {
+                            if (desktop.MainWindow is MainWindow mainWindow)
+                                mainWindow.LoadApplications();
+                        }
+                        break;
+                }
             }
         }
 

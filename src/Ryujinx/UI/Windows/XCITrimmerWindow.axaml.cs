@@ -9,9 +9,8 @@ using System;
 using System.Threading.Tasks;
 
 // TODO
-//  Summary at bottom - Potential Space Saved / Actual Space Saved
-//  Processing label - e.g. Trimming / Untrimming xxx file(s)
-//  Error Reporting
+//  Sort by Name / Savings
+//  Filter by Trimmable / Untrimmable
 
 namespace Ryujinx.Ava.UI.Windows
 {

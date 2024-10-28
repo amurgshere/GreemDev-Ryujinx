@@ -4,6 +4,7 @@ using Gommon;
 using Avalonia.Threading;
 using Ryujinx.Ava.Common;
 using Ryujinx.Ava.Common.Locale;
+using Ryujinx.Ava.UI.Helpers;
 using Ryujinx.Common.Utilities;
 using Ryujinx.UI.App.Common;
 using Ryujinx.UI.Common.Models;
@@ -14,57 +15,14 @@ using static Ryujinx.Common.Utilities.XCIFileTrimmer;
 
 namespace Ryujinx.Ava.UI.ViewModels
 {
-    internal static class AvaloniaListExtensions
-    {
-        /// <summary>
-        /// Adds or Replaces an item in an AvaloniaList irrespective of whether the item already exists
-        /// </summary>
-        /// <typeparam name="T">The type of the element in the AvaoloniaList</typeparam>
-        /// <param name="list">The list containing the item to replace</param>
-        /// <param name="item">The item to replace</param>
-        /// <returns>True if the item was found and replaced, false if it was addded</returns>
-        /// <remarks>
-        /// The indexes on the AvaloniaList will only replace if the item does not match, 
-        /// this causes the items to not be replaced if the Equality is customised on the 
-        /// items. This method will instead find, remove and add the item to ensure it is
-        /// replaced correctly.
-        /// </remarks>
-        public static bool AddOrReplaceWith<T>(this AvaloniaList<T> list, T item)
-        {
-            var index = list.IndexOf(item);
-
-            if (index != -1)
-            {
-                list.RemoveAt(index);
-                list.Insert(index, item);
-                return true;
-            }
-            else
-            {
-                list.Add(item);
-                return false;
-            }
-        }
-
-        public static void AddOrReplaceMatching<T>(this AvaloniaList<T> list, IList<T> sourceList, IList<T> matchingList)
-        {
-            foreach (var match in matchingList)
-            {
-                var index = sourceList.IndexOf(match);
-                if (index != -1)
-                {
-                    list.AddOrReplaceWith(sourceList[index]);
-                }
-                else
-                {
-                    list.AddOrReplaceWith(match);
-                }
-            }
-        }
-    }
-
     public class XCITrimmerViewModel : BaseModel
     {
+        private enum ProcessingMode
+        {
+            Trimming,
+            Untrimming
+        }
+
         private const string _FileExtXCI = "XCI";
 
         private readonly Ryujinx.Common.Logging.XCIFileTrimmerLog _logger;
@@ -76,6 +34,7 @@ namespace Ryujinx.Ava.UI.ViewModels
         private MainWindowViewModel _mainWindowViewModel;
         private CancellationTokenSource _cancellationTokenSource;
         private string _search;
+        private ProcessingMode _processingMode;
 
         public XCITrimmerViewModel(MainWindowViewModel mainWindowViewModel)
         {
@@ -91,57 +50,102 @@ namespace Ryujinx.Ava.UI.ViewModels
                 .Where(app => app.FileExtension == _FileExtXCI);
 
             foreach (var xciApp in apps)
-            {
                 AddOrUpdateApplication(xciApp, true);
-            }
 
-            OnPropertyChanged(nameof(UpdateCount));
-            SortAndFilter();
+            ApplicationsChanged();
         }
 
-        private bool AddOrUpdateApplication(XCITrimmerFileModel xci, bool suppressChanged = false, bool autoSelect = true)
+        private bool AddOrUpdateApplication(
+            XCITrimmerFileModel xci,
+            bool suppressChanged = false,
+            bool autoSelect = true,
+            OperationOutcome operationOutcome = OperationOutcome.Undetermined)
         {
             var xciApp = _applicationLibrary.Applications.Items.First(app => app.FileExtension == _FileExtXCI && app.Path == xci.Path);
-            return AddOrUpdateApplication(xciApp, false);
+            return AddOrUpdateApplication(xciApp, suppressChanged, autoSelect, operationOutcome);
         }
 
-        private bool AddOrUpdateApplication(ApplicationData xciApp, bool suppressChanged = false, bool autoSelect = true)
+        private bool AddOrUpdateApplication(
+            ApplicationData xciApp,
+            bool suppressChanged = false,
+            bool autoSelect = true,
+            OperationOutcome operationOutcome = OperationOutcome.Undetermined)
         {
-            XCITrimmerFileModel xci = XCITrimmerFileModel.FromApplicationData(xciApp, _logger);
+            XCITrimmerFileModel xci = XCITrimmerFileModel.FromApplicationData(xciApp, _logger) with { ProcessingOutcome = operationOutcome };
             bool replaced = _allXCIFiles.AddOrReplaceWith(xci);
             _displayedXCIFiles.AddOrReplaceWith(xci);
 
             if (autoSelect && xci.Trimmable)
-            {
                 _selectedXCIFiles.AddOrReplaceWith(xci);
-            }
 
             if (!suppressChanged)
-            {
-                if (!replaced)
-                {
-                    OnPropertyChanged(nameof(UpdateCount));
-                }
-
-                SortAndFilter();
-            }
+                ApplicationsChanged();
 
             return replaced;
         }
 
-        private void PerformOperation(bool trim)
+        private void DisplayedChanged()
+        {
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(DisplayedXCIFiles));
+            OnPropertyChanged(nameof(SelectedDisplayedXCIFiles));
+        }
+
+        private void ApplicationsChanged()
+        {
+            OnPropertyChanged(nameof(AllXCIFiles));
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(PotentialSavings));
+            OnPropertyChanged(nameof(ActualSavings));
+            OnPropertyChanged(nameof(CanTrim));
+            OnPropertyChanged(nameof(CanUntrim));
+            SortAndFilter();
+        }
+
+        private void SelectionChanged(bool displayedChanged = true)
+        {
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(CanTrim));
+            OnPropertyChanged(nameof(CanUntrim));
+            OnPropertyChanged(nameof(SelectedXCIFiles));
+
+            if (displayedChanged)
+                OnPropertyChanged(nameof(SelectedDisplayedXCIFiles));
+        }
+
+        private void ProcessingChanged()
+        {
+            OnPropertyChanged(nameof(Processing));
+            OnPropertyChanged(nameof(Cancel));
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(CanTrim));
+            OnPropertyChanged(nameof(CanUntrim));
+        }
+
+        private IEnumerable<XCITrimmerFileModel> GetSelectedDisplayedXCIFiles()
+        {
+            return _displayedXCIFiles.Where(xci => _selectedXCIFiles.Contains(xci));
+        }
+
+        private void PerformOperation(ProcessingMode processingMode)
         {
             if (Processing)
             {
                 return;
             }
 
+            _processingMode = processingMode;
             Processing = true;
             var cancellationToken = _cancellationTokenSource.Token;
 
             Thread XCIFileTrimThread = new(() =>
             {
-                var toProcess = Sort(SelectedXCIFiles).ToList();
+                var toProcess = Sort(SelectedXCIFiles
+                    .Where(xci => 
+                        (processingMode == ProcessingMode.Untrimming && xci.Untrimmable) ||
+                        (processingMode == ProcessingMode.Trimming && xci.Trimmable)
+                    )).ToList();
+
                 var viewsSaved = DisplayedXCIFiles.ToList();
 
                 Dispatcher.UIThread.Post(() =>
@@ -156,9 +160,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                     foreach (var xciApp in toProcess)
                     {
                         if (cancellationToken.IsCancellationRequested)
-                        {
                             break;
-                        }
 
                         var trimmer = new XCIFileTrimmer(xciApp.Path, _logger);
 
@@ -167,32 +169,33 @@ namespace Ryujinx.Ava.UI.ViewModels
                             ProcessingApplication = xciApp;
                         });
 
+                        var outcome = OperationOutcome.Undetermined;
+
                         try
                         {
-                            var outcome = OperationOutcome.Undetermined;
-                            
                             if (cancellationToken.IsCancellationRequested)
-                            {
                                 break;
+
+                            switch (processingMode)
+                            {
+                                case ProcessingMode.Trimming:
+                                    outcome = trimmer.Trim(cancellationToken);
+                                    break;
+                                case ProcessingMode.Untrimming:
+                                    outcome = trimmer.Untrim(cancellationToken);
+                                    break;
                             }
 
-                            if (trim)
-                            {
-                                outcome = trimmer.Trim(cancellationToken);
-                            }
-                            else
-                            {
-                                outcome = trimmer.Untrim(cancellationToken);
-                            }
+                            if (outcome == OperationOutcome.Cancelled)
+                                outcome = OperationOutcome.Undetermined;
                         }
                         finally
                         {
                             Dispatcher.UIThread.Post(() =>
                             {
                                 if (ProcessingApplication.HasValue)
-                                {
-                                    AddOrUpdateApplication(ProcessingApplication.Value, true, false);
-                                }
+                                    AddOrUpdateApplication(ProcessingApplication.Value, false, false, outcome);
+
                                 ProcessingApplication = null;
                             });
                         }
@@ -205,7 +208,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                         _displayedXCIFiles.AddOrReplaceMatching(_allXCIFiles, viewsSaved);
                         _selectedXCIFiles.AddOrReplaceMatching(_allXCIFiles, toProcess);
                         Processing = false;
-                        SortAndFilter();
+                        ApplicationsChanged();
                     });
                 }
             })
@@ -221,13 +224,15 @@ namespace Ryujinx.Ava.UI.ViewModels
         {
             if (arg is XCITrimmerFileModel content)
             {
-                return string.IsNullOrWhiteSpace(_search) || content.Name.ToLower().Contains(_search.ToLower()) || content.Path.ToLower().Contains(_search.ToLower());
+                return string.IsNullOrWhiteSpace(_search)
+                    || content.Name.ToLower().Contains(_search.ToLower())
+                    || content.Path.ToLower().Contains(_search.ToLower());
             }
 
             return false;
         }
 
-        private IOrderedEnumerable<XCITrimmerFileModel> Sort(AvaloniaList<XCITrimmerFileModel> list)
+        private IOrderedEnumerable<XCITrimmerFileModel> Sort(IEnumerable<XCITrimmerFileModel> list)
         {
             return list
                 .OrderBy(it => it.Name)
@@ -236,12 +241,12 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         public void TrimSelected()
         {
-            PerformOperation(true);
+            PerformOperation(ProcessingMode.Trimming);
         }
 
         public void UntrimSelected()
         {
-            PerformOperation(false);
+            PerformOperation(ProcessingMode.Untrimming);
         }
 
         public void SetProgress(int current, int maximum)
@@ -250,56 +255,52 @@ namespace Ryujinx.Ava.UI.ViewModels
             {
                 int percentageProgress = 100 * current / maximum;
                 if (!ProcessingApplication.HasValue || (ProcessingApplication.Value.PercentageProgress != percentageProgress))
-                {
                     ProcessingApplication = ProcessingApplication.Value with { PercentageProgress = percentageProgress };
-                }
             }
         }
 
         public void SelectAll()
         {
-            SelectedXCIFiles.Clear();
             SelectedXCIFiles.AddRange(DisplayedXCIFiles);
+            SelectionChanged();
         }
 
         public void SelectNone()
         {
-            SelectedXCIFiles.Remove(DisplayedXCIFiles);
+            SelectedXCIFiles.RemoveMany(DisplayedXCIFiles);
+            SelectionChanged();
         }
 
         public void Select(XCITrimmerFileModel model)
         {
+            bool selectionChanged = !SelectedXCIFiles.Contains(model);
+            bool displayedSelectionChanged = !SelectedDisplayedXCIFiles.Contains(model);
             SelectedXCIFiles.ReplaceOrAdd(model, model);
+            if (selectionChanged)
+                SelectionChanged(displayedSelectionChanged);
         }
 
         public void Deselect(XCITrimmerFileModel model)
         {
-            SelectedXCIFiles.Remove(model);
+            bool displayedSelectionChanged = !SelectedDisplayedXCIFiles.Contains(model);
+            if (SelectedXCIFiles.Remove(model))
+                SelectionChanged(displayedSelectionChanged);
         }
 
         public void SortAndFilter()
         {
             if (Processing)
-            {
                 return;
-            }
 
             Sort(AllXCIFiles)
                 .AsObservableChangeSet()
                 .Filter(Filter)
                 .Bind(out var view).AsObservableList();
 
-            var items = SelectedXCIFiles.ToArray();
-
             _displayedXCIFiles.Clear();
             _displayedXCIFiles.AddRange(view);
 
-            foreach (XCITrimmerFileModel item in items)
-            {
-                SelectedXCIFiles.ReplaceOrAdd(item, item);
-            }
-
-            OnPropertyChanged(nameof(DisplayedXCIFiles));
+            DisplayedChanged();
         }
 
         public Optional<XCITrimmerFileModel> ProcessingApplication
@@ -308,14 +309,10 @@ namespace Ryujinx.Ava.UI.ViewModels
             set
             {
                 if (!value.HasValue && _processingApplication.HasValue)
-                {
                     value = _processingApplication.Value with { PercentageProgress = null };
-                }
 
                 if (value.HasValue)
-                {
                     _displayedXCIFiles.AddOrReplaceWith(value.Value);
-                }
 
                 _processingApplication = value;
                 OnPropertyChanged();
@@ -337,8 +334,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                     _cancellationTokenSource = null;
                 }
 
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(Cancel));
+                ProcessingChanged();
             }
         }
 
@@ -350,51 +346,37 @@ namespace Ryujinx.Ava.UI.ViewModels
                 if (value)
                 {
                     if (!Processing)
-                    {
                         return;
-                    }
 
                     _cancellationTokenSource.Cancel();
                 }
 
-                OnPropertyChanged();
+                ProcessingChanged();
             }
         }
 
-        public AvaloniaList<XCITrimmerFileModel> AllXCIFiles
+        public string Status
         {
-            get => _allXCIFiles;
-            set
+            get
             {
-                _allXCIFiles = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(UpdateCount));
-                SortAndFilter();
-            }
-        }
-
-        public string UpdateCount
-        {
-            get => string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerCount], AllXCIFiles.Count);
-        }
-
-        public AvaloniaList<XCITrimmerFileModel> DisplayedXCIFiles
-        {
-            get => _displayedXCIFiles;
-            set
-            {
-                _displayedXCIFiles = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public AvaloniaList<XCITrimmerFileModel> SelectedXCIFiles
-        {
-            get => _selectedXCIFiles;
-            set
-            {
-                _selectedXCIFiles = value;
-                OnPropertyChanged();
+                if (Processing)
+                {
+                    switch (_processingMode)
+                    {
+                        case ProcessingMode.Trimming:
+                            return string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusTrimming], DisplayedXCIFiles.Count);
+                        case ProcessingMode.Untrimming:
+                            return string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusUntrimming], DisplayedXCIFiles.Count);
+                        default:
+                            return string.Empty;
+                    }
+                }
+                else
+                {
+                    return string.IsNullOrEmpty(Search) ?
+                        string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusCount], SelectedXCIFiles.Count, AllXCIFiles.Count) :
+                        string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusCountWithFilter], SelectedXCIFiles.Count, AllXCIFiles.Count, DisplayedXCIFiles.Count);
+                }
             }
         }
 
@@ -406,6 +388,65 @@ namespace Ryujinx.Ava.UI.ViewModels
                 _search = value;
                 OnPropertyChanged();
                 SortAndFilter();
+            }
+        }
+        public AvaloniaList<XCITrimmerFileModel> SelectedXCIFiles
+        {
+            get => _selectedXCIFiles;
+            set
+            {
+                _selectedXCIFiles = value;
+                SelectionChanged();
+            }
+        }
+
+        public AvaloniaList<XCITrimmerFileModel> AllXCIFiles
+        {
+            get => _allXCIFiles;
+        }
+
+        public AvaloniaList<XCITrimmerFileModel> DisplayedXCIFiles
+        {
+            get => _displayedXCIFiles;
+        }
+
+        public string PotentialSavings
+        {
+            get
+            {
+                return string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerSavingsMb], AllXCIFiles.Sum(xci => xci.PotentialSavingsB / 1024 / 1024));
+            }
+        }
+
+        public string ActualSavings
+        {
+            get
+            {
+                return string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerSavingsMb], AllXCIFiles.Sum(xci => xci.CurrentSavingsB / 1024 / 1024));
+            }
+        }
+
+        public IEnumerable<XCITrimmerFileModel> SelectedDisplayedXCIFiles
+        {
+            get
+            {
+                return GetSelectedDisplayedXCIFiles().ToList();
+            }
+        }
+
+        public bool CanTrim
+        {
+            get
+            {
+                return !Processing && _selectedXCIFiles.Any(xci => xci.Trimmable);
+            }
+        }
+
+        public bool CanUntrim
+        {
+            get
+            {
+                return !Processing && _selectedXCIFiles.Any(xci => xci.Untrimmable);
             }
         }
     }

@@ -5,7 +5,15 @@ using System;
 
 namespace Ryujinx.UI.Common.Models
 {
-    public record XCITrimmerFileModel(string Name, string Path, bool Trimmable, bool Untrimmable, long PotentialSavingsB, long CurrentSavingsB, int? PercentageProgress)
+    public record XCITrimmerFileModel(
+        string Name,
+        string Path,
+        bool Trimmable,
+        bool Untrimmable,
+        long PotentialSavingsB,
+        long CurrentSavingsB,
+        int? PercentageProgress,
+        XCIFileTrimmer.OperationOutcome ProcessingOutcome)
     {
         public static XCITrimmerFileModel FromApplicationData(ApplicationData applicationData, XCIFileTrimmerLog logger)
         {
@@ -18,8 +26,18 @@ namespace Ryujinx.UI.Common.Models
                 trimmer.CanBeUntrimmed,
                 trimmer.DiskSpaceSavingsB,
                 trimmer.DiskSpaceSavedB,
-                null
+                null,
+                XCIFileTrimmer.OperationOutcome.Undetermined
             );
+        }
+
+        public bool IsFailed
+        {
+            get
+            {
+                return ProcessingOutcome != XCIFileTrimmer.OperationOutcome.Undetermined &&
+                    ProcessingOutcome != XCIFileTrimmer.OperationOutcome.Successful;
+            }
         }
 
         public virtual bool Equals(XCITrimmerFileModel obj)

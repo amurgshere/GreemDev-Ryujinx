@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
-using Ryujinx.Ava.Common.Locale;
 using Ryujinx.UI.Common.Models;
 using System;
 using System.Globalization;
@@ -9,9 +8,9 @@ using static Ryujinx.Common.Utilities.XCIFileTrimmer;
 
 namespace Ryujinx.Ava.UI.Helpers
 {
-    internal class XCITrimmerFileStatusConverter : IValueConverter
+    internal class XCITrimmerFileStatusDetailConverter : IValueConverter
     {
-        public static XCITrimmerFileStatusConverter Instance = new();
+        public static XCITrimmerFileStatusDetailConverter Instance = new();
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
@@ -30,12 +29,9 @@ namespace Ryujinx.Ava.UI.Helpers
                 return null;
             }
 
-            return app.PercentageProgress != null ? String.Empty :
-                app.ProcessingOutcome != OperationOutcome.Successful && app.ProcessingOutcome != OperationOutcome.Undetermined ? LocaleManager.Instance[LocaleKeys.TitleXCIStatusFailedLabel] :
-                app.Trimmable & app.Untrimmable ? LocaleManager.Instance[LocaleKeys.TitleXCIStatusPartialLabel] :
-                app.Trimmable ? LocaleManager.Instance[LocaleKeys.TitleXCIStatusTrimmableLabel] : 
-                app.Untrimmable ? LocaleManager.Instance[LocaleKeys.TitleXCIStatusUntrimmableLabel] :
-                String.Empty;
+            return app.PercentageProgress != null ? null :
+                app.ProcessingOutcome != OperationOutcome.Successful && app.ProcessingOutcome != OperationOutcome.Undetermined ? app.ProcessingOutcome.ToLocalisedText() :
+                null;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
