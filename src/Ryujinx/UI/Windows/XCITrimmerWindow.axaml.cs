@@ -71,6 +71,18 @@ namespace Ryujinx.Ava.UI.Windows
             ViewModel.Cancel = true;
         }
 
+        public void Sort_Checked(object sender, RoutedEventArgs args)
+        {
+            if (sender is RadioButton { Tag: string sortField })
+                ViewModel.SortingField = Enum.Parse<XCITrimmerViewModel.SortField>(sortField);
+        }
+
+        public void Order_Checked(object sender, RoutedEventArgs args)
+        {
+            if (sender is RadioButton { Tag: string sortOrder })
+                ViewModel.SortingAscending = sortOrder is "Ascending";
+        }
+
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             foreach (var content in e.AddedItems)

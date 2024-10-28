@@ -28,7 +28,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Panel
-            Margin="0 0 10 10"
+            Margin="10 10 10 10"
             Grid.Row="0">
             <TextBlock Text="{Binding Status}" />
         </Panel>
@@ -38,11 +38,71 @@
             Grid.Row="1">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox
+                <StackPanel 
                     Grid.Column="0"
+                    Orientation="Horizontal">
+                    <TextBlock
+                        Margin="10,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Text="{locale:Locale CommonSort}" />
+                    <DropDownButton
+                        Width="150"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Content="{Binding SortingFieldName}">
+                        <DropDownButton.Flyout>
+                            <Flyout Placement="Bottom">
+                                <StackPanel
+                                    Margin="0"
+                                    HorizontalAlignment="Stretch"
+                                    Orientation="Vertical">
+                                    <StackPanel>
+                                        <RadioButton
+                                            Checked="Sort_Checked"
+                                            Content="{locale:Locale XCITrimmerSortName}"
+                                            GroupName="Sort"
+                                            IsChecked="{Binding IsSortedByName, Mode=OneTime}"
+                                            Tag="Name" />
+                                        <RadioButton
+                                            Checked="Sort_Checked"
+                                            Content="{locale:Locale XCITrimmerSortSaved}"
+                                            GroupName="Sort"
+                                            IsChecked="{Binding IsSortedBySaved, Mode=OneTime}"
+                                            Tag="Saved" />
+                                    </StackPanel>
+                                    <Border
+                                        Width="60"
+                                        Height="2"
+                                        Margin="5"
+                                        HorizontalAlignment="Stretch"
+                                        BorderBrush="White"
+                                        BorderThickness="0,1,0,0">
+                                        <Separator Height="0" HorizontalAlignment="Stretch" />
+                                    </Border>
+                                    <RadioButton
+                                        Checked="Order_Checked"
+                                        Content="{locale:Locale OrderAscending}"
+                                        GroupName="Order"
+                                        IsChecked="{Binding SortingAscending, Mode=OneTime}"
+                                        Tag="Ascending" />
+                                    <RadioButton
+                                        Checked="Order_Checked"
+                                        Content="{locale:Locale OrderDescending}"
+                                        GroupName="Order"
+                                        IsChecked="{Binding !SortingAscending, Mode=OneTime}"
+                                        Tag="Descending" />
+                                </StackPanel>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </StackPanel>
+                <TextBox
+                    Grid.Column="1"
                     MinHeight="29"
                     MaxHeight="29"
                     Margin="5 0 5 0"
@@ -50,21 +110,21 @@
                     Watermark="{locale:Locale Search}"
                     Text="{Binding Search}" />
                 <StackPanel
-                    Grid.Column="1"
+                    Grid.Column="2"
                     Orientation="Horizontal">
                     <Button
-                        Name="SelectAllButton"
+                        Name="SelectDisplayedButton"
                         MinWidth="90"
                         Margin="5"
-                        Command="{Binding SelectAll}">
-                        <TextBlock Text="Select All" />
+                        Command="{Binding SelectDisplayed}">
+                        <TextBlock Text="{locale:Locale XCITrimmerSelectDisplayed}" />
                     </Button>
                     <Button
-                        Name="SelectNoneButton"
+                        Name="DeselectDisplayedButton"
                         MinWidth="90"
                         Margin="5"
-                        Command="{Binding SelectNone}">
-                        <TextBlock Text="Select None" />
+                        Command="{Binding DeselectDisplayed}">
+                        <TextBlock Text="{locale:Locale XCITrimmerDeselectDisplayed}" />
                     </Button>
                 </StackPanel>
             </Grid>

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using static Ryujinx.Common.Utilities.XCIFileTrimmer;
+using Silk.NET.Core;
 
 namespace Ryujinx.Ava.UI.ViewModels
 {
@@ -21,6 +22,12 @@ namespace Ryujinx.Ava.UI.ViewModels
         {
             Trimming,
             Untrimming
+        }
+
+        public enum SortField
+        {
+            Name,
+            Saved
         }
 
         private const string _FileExtXCI = "XCI";
@@ -35,6 +42,8 @@ namespace Ryujinx.Ava.UI.ViewModels
         private CancellationTokenSource _cancellationTokenSource;
         private string _search;
         private ProcessingMode _processingMode;
+        private SortField _sortField = SortField.Name;
+        private bool _sortAscending = true;
 
         public XCITrimmerViewModel(MainWindowViewModel mainWindowViewModel)
         {
@@ -82,6 +91,22 @@ namespace Ryujinx.Ava.UI.ViewModels
                 ApplicationsChanged();
 
             return replaced;
+        }
+
+        private void FilteringChanged()
+        {
+            OnPropertyChanged(nameof(Search));
+            SortAndFilter();
+        }
+
+        private void SortingChanged()
+        {
+            OnPropertyChanged(nameof(IsSortedByName));
+            OnPropertyChanged(nameof(IsSortedBySaved));
+            OnPropertyChanged(nameof(SortingAscending));
+            OnPropertyChanged(nameof(SortingField));
+            OnPropertyChanged(nameof(SortingFieldName));
+            SortAndFilter();
         }
 
         private void DisplayedChanged()
@@ -232,10 +257,43 @@ namespace Ryujinx.Ava.UI.ViewModels
             return false;
         }
 
+        private class CompareXCITrimmerFiles : IComparer<XCITrimmerFileModel>
+        {
+            private XCITrimmerViewModel _viewModel;
+
+            public CompareXCITrimmerFiles(XCITrimmerViewModel ViewModel)
+            {
+                _viewModel = ViewModel;
+            }
+
+            public int Compare(XCITrimmerFileModel x, XCITrimmerFileModel y)
+            {
+                int result = 0;
+
+                switch(_viewModel.SortingField)
+                {
+                    case SortField.Name:
+                        result = x.Name.CompareTo(y.Name);
+                        break;
+                    case SortField.Saved:
+                        result = x.PotentialSavingsB.CompareTo(y.PotentialSavingsB);
+                        break;
+                }
+                
+                if (!_viewModel.SortingAscending)
+                    result = -result;
+
+                if (result == 0)
+                    result = x.Path.CompareTo(y.Path);
+
+                return result;
+            }
+        }
+
         private IOrderedEnumerable<XCITrimmerFileModel> Sort(IEnumerable<XCITrimmerFileModel> list)
         {
             return list
-                .OrderBy(it => it.Name)
+                .OrderBy(xci => xci, new CompareXCITrimmerFiles(this))
                 .ThenBy(it => it.Path);
         }
 
@@ -259,13 +317,13 @@ namespace Ryujinx.Ava.UI.ViewModels
             }
         }
 
-        public void SelectAll()
+        public void SelectDisplayed()
         {
             SelectedXCIFiles.AddRange(DisplayedXCIFiles);
             SelectionChanged();
         }
 
-        public void SelectNone()
+        public void DeselectDisplayed()
         {
             SelectedXCIFiles.RemoveMany(DisplayedXCIFiles);
             SelectionChanged();
@@ -361,15 +419,12 @@ namespace Ryujinx.Ava.UI.ViewModels
             {
                 if (Processing)
                 {
-                    switch (_processingMode)
+                    return _processingMode switch
                     {
-                        case ProcessingMode.Trimming:
-                            return string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusTrimming], DisplayedXCIFiles.Count);
-                        case ProcessingMode.Untrimming:
-                            return string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusUntrimming], DisplayedXCIFiles.Count);
-                        default:
-                            return string.Empty;
-                    }
+                        ProcessingMode.Trimming => string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusTrimming], DisplayedXCIFiles.Count),
+                        ProcessingMode.Untrimming => string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerTitleStatusUntrimming], DisplayedXCIFiles.Count),
+                        _ => string.Empty
+                    };
                 }
                 else
                 {
@@ -386,10 +441,52 @@ namespace Ryujinx.Ava.UI.ViewModels
             set
             {
                 _search = value;
-                OnPropertyChanged();
-                SortAndFilter();
+                FilteringChanged();
             }
         }
+
+        public SortField SortingField
+        {
+            get => _sortField;
+            set 
+            {
+                _sortField = value;
+                SortingChanged();
+            }
+        }
+
+        public string SortingFieldName
+        {
+            get
+            {
+                return SortingField switch
+                {
+                    SortField.Name => LocaleManager.Instance[LocaleKeys.XCITrimmerSortName],
+                    SortField.Saved => LocaleManager.Instance[LocaleKeys.XCITrimmerSortSaved],
+                    _ => string.Empty,
+                };
+            }
+        }
+        public bool SortingAscending
+        {
+            get => _sortAscending;
+            set 
+            {
+                _sortAscending = value;
+                SortingChanged();
+            }
+        }
+
+        public bool IsSortedByName
+        {
+            get => _sortField == SortField.Name;
+        }
+
+        public bool IsSortedBySaved
+        {
+            get => _sortField == SortField.Saved;
+        }
+
         public AvaloniaList<XCITrimmerFileModel> SelectedXCIFiles
         {
             get => _selectedXCIFiles;
