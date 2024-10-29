@@ -9,11 +9,11 @@
     xmlns:models="clr-namespace:Ryujinx.UI.Common.Models;assembly=Ryujinx.UI.Common"
     xmlns:ui="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
     xmlns:helpers="clr-namespace:Ryujinx.Ava.UI.Helpers"
-    Width="600"
-    Height="500"
-    mc:Ignorable="d"
+    Width="700"
+    Height="600"
     x:DataType="viewModels:XCITrimmerViewModel"
-    Focusable="True">
+    Focusable="True"
+    mc:Ignorable="d">    
     <UserControl.Resources>
         <helpers:XCITrimmerFileStatusConverter x:Key="StatusLabel" />
         <helpers:XCITrimmerFileStatusDetailConverter x:Key="StatusDetailLabel" />

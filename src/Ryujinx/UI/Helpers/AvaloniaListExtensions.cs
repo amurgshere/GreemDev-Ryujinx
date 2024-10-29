@@ -11,6 +11,7 @@ namespace Ryujinx.Ava.UI.Helpers
         /// <typeparam name="T">The type of the element in the AvaoloniaList</typeparam>
         /// <param name="list">The list containing the item to replace</param>
         /// <param name="item">The item to replace</param>
+        /// <param name="addIfNotFound">True to add the item if its not found</param>
         /// <returns>True if the item was found and replaced, false if it was addded</returns>
         /// <remarks>
         /// The indexes on the AvaloniaList will only replace if the item does not match, 
@@ -18,7 +19,7 @@ namespace Ryujinx.Ava.UI.Helpers
         /// items. This method will instead find, remove and add the item to ensure it is
         /// replaced correctly.
         /// </remarks>
-        public static bool AddOrReplaceWith<T>(this AvaloniaList<T> list, T item)
+        public static bool ReplaceWith<T>(this AvaloniaList<T> list, T item, bool addIfNotFound = true)
         {
             var index = list.IndexOf(item);
 
@@ -49,11 +50,11 @@ namespace Ryujinx.Ava.UI.Helpers
                 var index = sourceList.IndexOf(match);
                 if (index != -1)
                 {
-                    list.AddOrReplaceWith(sourceList[index]);
+                    list.ReplaceWith(sourceList[index]);
                 }
                 else
                 {
-                    list.AddOrReplaceWith(match);
+                    list.ReplaceWith(match);
                 }
             }
         }

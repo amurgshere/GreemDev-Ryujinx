@@ -19,7 +19,7 @@ namespace Ryujinx.Ava.UI.Helpers
             {
                 return BindingOperations.DoNothing;
             }
-            
+
             if (!targetType.IsAssignableFrom(typeof(string)))
             {
                 return null;
@@ -34,7 +34,7 @@ namespace Ryujinx.Ava.UI.Helpers
             {
                 return LocaleManager.Instance.UpdateAndGetDynamicValue(LocaleKeys.TitleXCICanSaveLabel, (app.PotentialSavingsB - app.CurrentSavingsB) / _bytesPerMB);
             }
-            else 
+            else
             {
                 return LocaleManager.Instance.UpdateAndGetDynamicValue(LocaleKeys.TitleXCISavingLabel, app.CurrentSavingsB / _bytesPerMB);
             }

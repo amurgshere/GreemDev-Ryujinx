@@ -1,5 +1,4 @@
 using Ryujinx.Ava.Common.Locale;
-using Ryujinx.Common.Utilities;
 using static Ryujinx.Common.Utilities.XCIFileTrimmer;
 
 namespace Ryujinx.Ava.UI.Helpers

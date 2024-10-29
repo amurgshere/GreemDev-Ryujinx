@@ -1,4 +1,5 @@
-#define XCI_TRIMMER_READ_ONLY_MODE
+// Uncomment the line below to ensure XCIFileTrimmer does not modify files
+//#define XCI_TRIMMER_READ_ONLY_MODE
 
 using Gommon;
 using System;
@@ -7,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Ryujinx.Common.Utilities
 {

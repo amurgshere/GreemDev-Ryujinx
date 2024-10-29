@@ -18,7 +18,7 @@ namespace Ryujinx.Ava.UI.Helpers
             {
                 return BindingOperations.DoNothing;
             }
-            
+
             if (!targetType.IsAssignableFrom(typeof(string)))
             {
                 return null;

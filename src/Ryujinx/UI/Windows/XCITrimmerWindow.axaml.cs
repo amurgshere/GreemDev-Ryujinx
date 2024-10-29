@@ -8,10 +8,6 @@ using Ryujinx.UI.Common.Models;
 using System;
 using System.Threading.Tasks;
 
-// TODO
-//  Sort by Name / Savings
-//  Filter by Trimmable / Untrimmable
-
 namespace Ryujinx.Ava.UI.Windows
 {
     public partial class XCITrimmerWindow : UserControl
@@ -40,7 +36,7 @@ namespace Ryujinx.Ava.UI.Windows
                 SecondaryButtonText = "",
                 CloseButtonText = "",
                 Content = new XCITrimmerWindow(mainWindowViewModel),
-                Title = string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerWindowTitle])
+                Title = string.Format(LocaleManager.Instance[LocaleKeys.XCITrimmerWindowTitle]),
             };
 
             Style bottomBorder = new(x => x.OfType<Grid>().Name("DialogSpace").Child().OfType<Border>());

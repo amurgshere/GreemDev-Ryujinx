@@ -1,7 +1,6 @@
 using Ryujinx.Common.Logging;
 using Ryujinx.Common.Utilities;
 using Ryujinx.UI.App.Common;
-using System;
 
 namespace Ryujinx.UI.Common.Models
 {
