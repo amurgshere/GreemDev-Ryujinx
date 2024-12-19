@@ -100,6 +100,7 @@ then
     rcodesign sign --entitlements-xml-path "$ENTITLEMENTS_FILE_PATH" "$UNIVERSAL_APP_BUNDLE"
 else
     echo "Using codesign for ad-hoc signing"
+    find "$UNIVERSAL_APP_BUNDLE" -name "*.dylib" -exec codesign -f -s - {} \;
     codesign --entitlements "$ENTITLEMENTS_FILE_PATH" -f -s - "$UNIVERSAL_APP_BUNDLE"
 fi
 

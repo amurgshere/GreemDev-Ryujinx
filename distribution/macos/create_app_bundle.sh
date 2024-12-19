@@ -30,7 +30,27 @@ cp -r "$PUBLISH_DIRECTORY/THIRDPARTY.md" "$APP_BUNDLE_DIRECTORY/Contents/Resourc
 echo -n "APPL????" > "$APP_BUNDLE_DIRECTORY/Contents/PkgInfo"
 
 # Fixup libraries and executable
+echo "Checking attributes before"
+xattr "$APP_BUNDLE_DIRECTORY/Contents/Frameworks/" *
+echo "Sleeping for 5 seconds..."
+sleep 5
+echo "Running xattr to clear attributes..."
+xattr "$APP_BUNDLE_DIRECTORY/Contents/Frameworks/" * -c
+echo "Checking attributes after"
+xattr "$APP_BUNDLE_DIRECTORY/Contents/Frameworks/" *
+echo "Running bundle_fix_up.py"
 python3 bundle_fix_up.py "$APP_BUNDLE_DIRECTORY" MacOS/Ryujinx
+echo "Checking attributes before"
+xattr "$APP_BUNDLE_DIRECTORY/Contents/Frameworks/" *
+echo "Sleeping for 5 seconds - 2..."
+sleep 5
+echo "Running xattr to clear attributes..."
+xattr "$APP_BUNDLE_DIRECTORY/Contents/Frameworks/" * -c
+echo "Checking attributes after"
+xattr "$APP_BUNDLE_DIRECTORY/Contents/Frameworks/" *
+echo "Running bundle_fix_up.py"
+python3 bundle_fix_up.py "$APP_BUNDLE_DIRECTORY" MacOS/Ryujinx
+
 
 # Now sign it
 if ! [ -x "$(command -v codesign)" ];
@@ -46,5 +66,6 @@ then
     rcodesign sign --entitlements-xml-path "$ENTITLEMENTS_FILE_PATH" "$APP_BUNDLE_DIRECTORY"
 else
     echo "Usign codesign for ad-hoc signing"
+    find "$APP_BUNDLE_DIRECTORY" -name "*.dylib" -exec codesign -f -s - {} \;
     codesign --entitlements "$ENTITLEMENTS_FILE_PATH" -f -s - "$APP_BUNDLE_DIRECTORY"
 fi
